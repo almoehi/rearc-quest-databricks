@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# uv / venv
+.venv/
+
+# Build artifacts
+dist/
+*.egg-info/
+build/
+
+# Test & coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Databricks bundle state
+.databricks/
+
+# Env files
+.env
+.env.*
+!.env.example
+
+# OS
+.DS_Store

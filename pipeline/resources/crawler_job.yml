@@ -1,0 +1,27 @@
+resources:
+  jobs:
+    bls_crawler:
+      name: "BLS Crawler"
+
+      schedule:
+        quartz_cron_expression: "0 0 0/8 * * ?"
+        timezone_id: "UTC"
+
+      environments:
+        - environment_key: crawler_env
+          spec:
+            client: "2"
+            dependencies:
+              - ../../crawler/dist/*.whl
+
+      tasks:
+        - task_key: sync
+          environment_key: crawler_env
+          python_wheel_task:
+            package_name: crawler
+            entry_point: crawler
+            parameters:
+              - "--output"
+              - "${var.data_path}"
+              - "--state-file"
+              - "${var.data_path}/_crawl_state/crawler_state.json"

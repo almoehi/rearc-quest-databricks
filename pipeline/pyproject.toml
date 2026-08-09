@@ -1,0 +1,18 @@
+[project]
+name = "bls-pipeline"
+version = "0.1.0"
+description = "BLS productivity data pipeline transforms"
+requires-python = ">=3.10"
+# pyspark is intentionally absent — Databricks Runtime provides it
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "pyspark>=3.5.0",
+    "databricks-connect>=16.1.7",
+    "databricks-sql-connector>=4.4.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

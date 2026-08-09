@@ -1,0 +1,6 @@
+# Schema resources are intentionally absent here.
+# DAB dev mode prefixes all schema resource names with dev_almoehi_, but DLT name= routing
+# writes to bare schema names (bronze/silver/gold) in all environments. Defining schema
+# resources here would create dev_almoehi_* schemas with grants in the wrong place.
+# Schema resources for bronze, silver, and gold are defined per-target in databricks.yml
+# for staging and prod only, where non-dev mode creates the bare schemas DLT actually uses.

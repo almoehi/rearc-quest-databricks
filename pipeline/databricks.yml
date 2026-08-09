@@ -1,0 +1,88 @@
+bundle:
+  name: bls-pipeline
+
+artifacts:
+  crawler:
+    type: whl
+    build: uv build
+    path: ../crawler   # builds crawler/dist/*.whl before every deploy
+
+variables:
+  catalog:
+    description: Unity Catalog name for this environment
+    default: rearc_dev
+  data_path:
+    description: Root path where the crawler writes TSV output (read by the DLT pipeline)
+    default: /tmp/bls-data
+  warehouse_id:
+    description: SQL warehouse used by the Genie Space
+    lookup:
+      warehouse: "Serverless Starter Warehouse"
+targets:
+  dev:
+    mode: development
+    default: true
+    presets:
+      name_prefix: ""
+    variables:
+      catalog: rearc_dev
+      data_path: /Volumes/rearc_dev/bronze/bls_raw
+
+  staging:
+    variables:
+      catalog: staging_bls
+      data_path: /Volumes/staging_bls/bronze/bls_raw
+    resources:
+      schemas:
+        bronze:
+          name: bronze
+          catalog_name: ${var.catalog}
+          comment: Raw BLS time series data ingested from TSV files
+          grants:
+            - privileges: [USE_SCHEMA, CREATE_TABLE, SELECT, MODIFY, MANAGE]
+              principal: almoehi@gmail.com
+        silver:
+          name: silver
+          catalog_name: ${var.catalog}
+          comment: Cleaned and enriched BLS productivity data with typed columns
+          grants:
+            - privileges: [USE_SCHEMA, CREATE_TABLE, SELECT, MODIFY, MANAGE]
+              principal: almoehi@gmail.com
+        gold:
+          name: gold
+          catalog_name: ${var.catalog}
+          comment: Aggregated BLS productivity metrics by sector, measure, and period
+          grants:
+            - privileges: [USE_SCHEMA, CREATE_TABLE, SELECT, MODIFY, MANAGE]
+              principal: almoehi@gmail.com
+
+  prod:
+    variables:
+      catalog: prod_bls
+      data_path: /Volumes/prod_bls/bronze/bls_raw
+    resources:
+      schemas:
+        bronze:
+          name: bronze
+          catalog_name: ${var.catalog}
+          comment: Raw BLS time series data ingested from TSV files
+          grants:
+            - privileges: [USE_SCHEMA, CREATE_TABLE, SELECT, MODIFY, MANAGE]
+              principal: almoehi@gmail.com
+        silver:
+          name: silver
+          catalog_name: ${var.catalog}
+          comment: Cleaned and enriched BLS productivity data with typed columns
+          grants:
+            - privileges: [USE_SCHEMA, CREATE_TABLE, SELECT, MODIFY, MANAGE]
+              principal: almoehi@gmail.com
+        gold:
+          name: gold
+          catalog_name: ${var.catalog}
+          comment: Aggregated BLS productivity metrics by sector, measure, and period
+          grants:
+            - privileges: [USE_SCHEMA, CREATE_TABLE, SELECT, MODIFY, MANAGE]
+              principal: almoehi@gmail.com
+
+include:
+  - resources/*.yml

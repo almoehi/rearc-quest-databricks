@@ -1,0 +1,28 @@
+# OS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+
+# Python / uv
+__pycache__/
+*.py[cod]
+.venv/
+dist/
+*.egg-info/
+build/
+
+# Test & coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.ruff_cache/
+
+# Databricks bundle state
+.databricks/
+
+# Env files
+.env
+.env.*
+!.env.example

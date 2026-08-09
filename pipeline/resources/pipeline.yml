@@ -1,0 +1,23 @@
+resources:
+  pipelines:
+    bls_pipeline:
+      name: "BLS Productivity Pipeline"
+      catalog: ${var.catalog}
+      schema: bronze
+      libraries:
+        - file:
+            path: ../dlt/silver_transforms.py
+        - file:
+            path: ../dlt/gold_transforms.py
+        - file:
+            path: ../dlt/bronze.py
+        - file:
+            path: ../dlt/silver.py
+        - file:
+            path: ../dlt/gold.py
+      configuration:
+        data_path: ${var.data_path}
+        catalog: ${var.catalog}
+      continuous: false
+      channel: current
+      serverless: true

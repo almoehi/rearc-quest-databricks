@@ -1,0 +1,11 @@
+resources:
+  volumes:
+    bls_raw:
+      catalog_name: ${var.catalog}
+      schema_name: bronze
+      name: bls_raw
+      volume_type: MANAGED
+      comment: Raw TSV files written by the BLS crawler; read by the DLT bronze layer
+      grants:
+        - privileges: [READ_VOLUME, WRITE_VOLUME, MANAGE]
+          principal: almoehi@gmail.com

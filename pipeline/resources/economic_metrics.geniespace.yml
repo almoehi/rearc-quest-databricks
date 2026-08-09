@@ -1,0 +1,124 @@
+resources:
+  genie_spaces:
+    economic_metrics:
+      title: "Economic Metrics Analysis Agent"
+      description: >-
+        Natural language interface to BLS Major Sector Productivity and Costs
+        (PR) data — query output per hour, unit labor costs, and cross-sector
+        productivity trends.
+      warehouse_id: ${var.warehouse_id}
+      parent_path: /Workspace/Shared/rearc_genie_spaces
+      permissions:
+        - level: CAN_MANAGE
+          user_name: almoehi@gmail.com
+      serialized_space:
+        version: 2
+        config:
+          sample_questions:
+            - id: "10000000000000000000000000000001"
+              question: ["How has output per hour changed year-over-year for the Nonfarm Business sector?"]
+            - id: "10000000000000000000000000000002"
+              question: ["Which sectors had the highest unit labor costs in the most recent year available?"]
+            - id: "10000000000000000000000000000003"
+              question: ["How does quarterly output per hour growth compare between Manufacturing and Nonfarm Business since 2015?"]
+            - id: "10000000000000000000000000000004"
+              question: ["What is the mean and standard deviation of US annual population between 2013 and 2018?"]
+            - id: "10000000000000000000000000000005"
+              question: ["How does Q01 output per hour correlate with US population by year?"]
+        data_sources:
+          tables:
+            - identifier: "${var.catalog}.gold.tbl_bls_productivity_all_series"
+            - identifier: "${var.catalog}.gold.tbl_productivity_annual"
+            - identifier: "${var.catalog}.gold.tbl_productivity_quarterly"
+            - identifier: "${var.catalog}.gold.tbl_series_best_year"
+            - identifier: "${var.catalog}.gold.v_population_stats_2013_2018"
+            - identifier: "${var.catalog}.gold.v_series_q01_population"
+            - identifier: "${var.catalog}.silver.lookup_measure"
+            - identifier: "${var.catalog}.silver.lookup_population"
+            - identifier: "${var.catalog}.silver.lookup_sector"
+        instructions:
+          example_question_sqls:
+            - id: "20000000000000000000000000000001"
+              question: ["How has output per hour changed year-over-year for the Nonfarm Business sector?"]
+              sql:
+                - |
+                  SELECT year, ROUND(avg_value, 2) AS avg_output_per_hour, series_count
+                  FROM ${var.catalog}.gold.tbl_productivity_annual
+                  WHERE LOWER(sector_name) LIKE '%nonfarm business%'
+                    AND LOWER(measure_text) LIKE '%output per hour%'
+                  ORDER BY year ASC
+            - id: "20000000000000000000000000000002"
+              question: ["Which sectors had the highest unit labor costs in the most recent year available?"]
+              sql:
+                - |
+                  SELECT sector_name, ROUND(avg_value, 2) AS avg_unit_labor_cost, series_count
+                  FROM ${var.catalog}.gold.tbl_productivity_annual
+                  WHERE LOWER(measure_text) LIKE '%unit labor cost%'
+                    AND year = (
+                      SELECT MAX(year)
+                      FROM ${var.catalog}.gold.tbl_productivity_annual
+                      WHERE LOWER(measure_text) LIKE '%unit labor cost%'
+                    )
+                  ORDER BY avg_value DESC
+            - id: "20000000000000000000000000000003"
+              question: ["How does quarterly output per hour growth compare between Manufacturing and Nonfarm Business since 2015?"]
+              sql:
+                - |
+                  SELECT
+                    year,
+                    period,
+                    MAX(CASE WHEN LOWER(sector_name) LIKE '%nonfarm business%'
+                        THEN ROUND(avg_value, 2) END) AS nonfarm_business,
+                    MAX(CASE WHEN LOWER(sector_name) LIKE '%manufacturing%'
+                        THEN ROUND(avg_value, 2) END) AS manufacturing
+                  FROM ${var.catalog}.gold.tbl_productivity_quarterly
+                  WHERE LOWER(measure_text) LIKE '%output per hour%'
+                    AND period IN ('Q01', 'Q02', 'Q03', 'Q04')
+                    AND year >= 2015
+                  GROUP BY year, period
+                  ORDER BY year, period
+          example_question_sqls:
+            - id: "20000000000000000000000000000004"
+              question: ["What is the mean and standard deviation of US annual population between 2013 and 2018?"]
+              sql:
+                - |
+                  SELECT mean_population, stddev_population, year_from, year_to, year_count
+                  FROM ${var.catalog}.gold.v_population_stats_2013_2018
+            - id: "20000000000000000000000000000005"
+              question: ["Show US population by year from the ACS data"]
+              sql:
+                - |
+                  SELECT year, population
+                  FROM ${var.catalog}.silver.lookup_population
+                  ORDER BY year ASC
+          text_instructions:
+            - id: "30000000000000000000000000000001"
+              content:
+                - |
+                  This agent answers questions about the BLS Major Sector Productivity and Costs (PR) program
+                  and US Census population data (ACS).
+
+                  ANNUAL QUESTIONS: Use tbl_productivity_annual (sector_name, measure_text, year, avg_value).
+                  Filter: LOWER(measure_text) LIKE '%output per hour%' for labor productivity;
+                  LIKE '%unit labor cost%' for cost metrics.
+
+                  QUARTERLY QUESTIONS: Use tbl_productivity_quarterly. Filter period IN ('Q01','Q02','Q03','Q04')
+                  to exclude Q05 moving averages. Sort by year, period_num for chronological order.
+
+                  SECTOR NAMES: Common values — 'Nonfarm Business', 'Manufacturing', 'Business',
+                  'Nonfinancial Corporations'. Use LOWER() LIKE patterns for robustness.
+
+                  GRANULAR SERIES: Use gold.tbl_bls_productivity_all_series for series-level detail — it contains all dimension
+                  columns (sector_name, measure_text, duration_text, seasonal_text, series_label) pre-joined.
+
+                  POPULATION DATA: US annual population (ACS) is available in:
+                  - silver.lookup_population — one row per year (nation_id, nation, year, population);
+                    note 2020 is absent due to COVID-19 census gap.
+                  - gold.v_population_stats_2013_2018 — mean/stddev pre-aggregated for 2013–2018 window.
+                  - gold.v_series_q01_population — Q01 productivity values joined with population by year.
+
+                  REVISIONS: In gold.tbl_bls_productivity_all_series, footnote_codes = 'R' marks revised estimates that supersede
+                  earlier releases for the same series/year/period.
+
+                  PERIOD TYPES: Q01–Q04 are quarters; Q05 is a five-quarter moving average (exclude from
+                  trend analysis unless explicitly requested); A01 is the annual average.
